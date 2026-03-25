@@ -1,0 +1,159 @@
+{
+  "name": "git-groups",
+  "displayName": "Git Groups",
+  "description": "Group your changed files and commit them separately",
+  "version": "0.1.0",
+  "publisher": "choi",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers"
+  ],
+  "activationEvents": [
+    "onView:gitGroups"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitGroupCommit.createGroup",
+        "title": "Create Group",
+        "icon": "$(add)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.deleteGroup",
+        "title": "Delete Group",
+        "icon": "$(trash)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.renameGroup",
+        "title": "Rename Group",
+        "icon": "$(edit)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.addToGroup",
+        "title": "Add to Group...",
+        "icon": "$(file-add)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.removeFromGroup",
+        "title": "Remove from Group",
+        "icon": "$(remove)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.stageGroup",
+        "title": "Stage Group",
+        "icon": "$(arrow-up)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.commitGroup",
+        "title": "Commit Group",
+        "icon": "$(check)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.refresh",
+        "title": "Refresh",
+        "icon": "$(refresh)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.openFile",
+        "title": "Open File",
+        "icon": "$(go-to-file)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.openDiff",
+        "title": "Open Changes",
+        "icon": "$(diff)",
+        "category": "Git Groups"
+      }
+    ],
+    "viewsContainers": {},
+    "views": {
+      "scm": [
+        {
+          "id": "gitGroups",
+          "name": "Git Groups",
+          "visibility": "visible"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "gitGroupCommit.createGroup",
+          "when": "view == gitGroups",
+          "group": "navigation"
+        },
+        {
+          "command": "gitGroupCommit.refresh",
+          "when": "view == gitGroups",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gitGroupCommit.stageGroup",
+          "when": "view == gitGroups && viewItem == group",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.commitGroup",
+          "when": "view == gitGroups && viewItem == group",
+          "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.renameGroup",
+          "when": "view == gitGroups && viewItem == group",
+          "group": "1_modify"
+        },
+        {
+          "command": "gitGroupCommit.deleteGroup",
+          "when": "view == gitGroups && viewItem == group",
+          "group": "2_delete"
+        },
+        {
+          "command": "gitGroupCommit.addToGroup",
+          "when": "view == gitGroups && viewItem == ungroupedFile",
+          "group": "inline"
+        },
+        {
+          "command": "gitGroupCommit.removeFromGroup",
+          "when": "view == gitGroups && viewItem == groupedFile",
+          "group": "inline"
+        },
+        {
+          "command": "gitGroupCommit.openDiff",
+          "when": "view == gitGroups && viewItem =~ /File$/",
+          "group": "inline"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "gitGroupCommit.renameGroup",
+        "key": "f2",
+        "when": "focusedView == gitGroups"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
