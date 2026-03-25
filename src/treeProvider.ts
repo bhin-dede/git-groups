@@ -33,7 +33,7 @@ export class GroupItem extends vscode.TreeItem {
   ) {
     super(groupName, vscode.TreeItemCollapsibleState.Expanded);
     this.description = `${fileCount}`;
-    this.contextValue = 'group';
+    this.contextValue = section === 'staged' ? 'stagedGroup' : 'changesGroup';
     this.iconPath = groupId === '__ungrouped__'
       ? new vscode.ThemeIcon('folder')
       : new vscode.ThemeIcon('tag');
@@ -156,7 +156,8 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
       }
 
       const unstagedFiles = this.changedFiles.filter(f => !f.staged);
-      if (unstagedFiles.length > 0) {
+      const hasGroups = this.groupManager.getAllGroups().length > 0;
+      if (unstagedFiles.length > 0 || hasGroups) {
         items.push(new SectionItem('changes', unstagedFiles.length));
       }
 
@@ -171,10 +172,10 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
       const groupedFiles = this.groupManager.getGroupedFiles();
       const items: TreeNode[] = [];
 
-      // Groups that have files in this section
+      // Groups (show empty groups in changes section so users can drag files in)
       for (const group of groups) {
         const filesInGroup = sectionFiles.filter(f => group.files.includes(f.path));
-        if (filesInGroup.length > 0) {
+        if (filesInGroup.length > 0 || !isStaged) {
           items.push(new GroupItem(group.id, group.name, filesInGroup.length, element.section));
         }
       }

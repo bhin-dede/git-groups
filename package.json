@@ -59,6 +59,12 @@
         "category": "Git Groups"
       },
       {
+        "command": "gitGroupCommit.commitStaged",
+        "title": "Commit Staged",
+        "icon": "$(check)",
+        "category": "Git Groups"
+      },
+      {
         "command": "gitGroupCommit.toggleCollapse",
         "title": "Toggle Collapse/Expand All",
         "icon": "$(collapse-all)",
@@ -80,6 +86,36 @@
         "command": "gitGroupCommit.openDiff",
         "title": "Open Changes",
         "icon": "$(diff)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.unstageGroup",
+        "title": "Move to Changes",
+        "icon": "$(arrow-down)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.discardGroup",
+        "title": "Discard Changes",
+        "icon": "$(discard)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.unstageFile",
+        "title": "Unstage",
+        "icon": "$(arrow-down)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.stageFile",
+        "title": "Stage",
+        "icon": "$(arrow-up)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.discardFile",
+        "title": "Discard Changes",
+        "icon": "$(discard)",
         "category": "Git Groups"
       }
     ],
@@ -108,44 +144,74 @@
       ],
       "view/item/context": [
         {
+          "command": "gitGroupCommit.commitStaged",
+          "when": "view == gitGroups && viewItem == stagedSection",
+          "group": "inline"
+        },
+        {
           "command": "gitGroupCommit.createGroup",
           "when": "view == gitGroups && viewItem == changesSection",
           "group": "inline"
         },
         {
-          "command": "gitGroupCommit.stageGroup",
-          "when": "view == gitGroups && viewItem == group",
+          "command": "gitGroupCommit.commitGroup",
+          "when": "view == gitGroups && viewItem == stagedGroup",
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.commitGroup",
-          "when": "view == gitGroups && viewItem == group",
+          "command": "gitGroupCommit.unstageGroup",
+          "when": "view == gitGroups && viewItem == stagedGroup",
           "group": "inline@2"
         },
         {
+          "command": "gitGroupCommit.stageGroup",
+          "when": "view == gitGroups && viewItem == changesGroup",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.discardGroup",
+          "when": "view == gitGroups && viewItem == changesGroup",
+          "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.deleteGroup",
+          "when": "view == gitGroups && viewItem =~ /Group$/",
+          "group": "inline@3"
+        },
+        {
           "command": "gitGroupCommit.renameGroup",
-          "when": "view == gitGroups && viewItem == group",
+          "when": "view == gitGroups && viewItem =~ /Group$/",
           "group": "1_modify"
         },
         {
           "command": "gitGroupCommit.deleteGroup",
-          "when": "view == gitGroups && viewItem == group",
+          "when": "view == gitGroups && viewItem =~ /Group$/",
           "group": "2_delete"
+        },
+        {
+          "command": "gitGroupCommit.unstageFile",
+          "when": "view == gitGroups && viewItem == stagedFile",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.stageFile",
+          "when": "view == gitGroups && viewItem =~ /^(ungroupedFile|groupedFile)$/",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.discardFile",
+          "when": "view == gitGroups && viewItem =~ /^(ungroupedFile|groupedFile)$/",
+          "group": "inline@2"
         },
         {
           "command": "gitGroupCommit.addToGroup",
           "when": "view == gitGroups && viewItem == ungroupedFile",
-          "group": "inline"
+          "group": "1_group"
         },
         {
           "command": "gitGroupCommit.removeFromGroup",
           "when": "view == gitGroups && viewItem == groupedFile",
-          "group": "inline"
-        },
-        {
-          "command": "gitGroupCommit.openDiff",
-          "when": "view == gitGroups && viewItem =~ /File$/",
-          "group": "inline"
+          "group": "1_group"
         }
       ]
     },

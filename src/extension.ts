@@ -152,6 +152,84 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const commitStaged = vscode.commands.registerCommand('gitGroupCommit.commitStaged', async () => {
+    const message = await vscode.window.showInputBox({
+      prompt: 'Commit message',
+      placeHolder: 'Enter commit message...',
+    });
+    if (!message) return;
+
+    try {
+      await gitService.commit(message);
+      vscode.window.showInformationMessage(`Committed: "${message}"`);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Commit failed: ${err.message}`);
+    }
+  });
+
+  const unstageGroup = vscode.commands.registerCommand('gitGroupCommit.unstageGroup', async (item: GroupItem) => {
+    if (!item) return;
+    const group = groupManager.getGroup(item.groupId);
+    if (!group || group.files.length === 0) return;
+    try {
+      await gitService.unstageFiles(group.files);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Unstage failed: ${err.message}`);
+    }
+  });
+
+  const discardGroup = vscode.commands.registerCommand('gitGroupCommit.discardGroup', async (item: GroupItem) => {
+    if (!item) return;
+    const group = groupManager.getGroup(item.groupId);
+    if (!group || group.files.length === 0) return;
+    const confirm = await vscode.window.showWarningMessage(
+      `Discard all changes in "${group.name}"?`, { modal: true }, 'Discard'
+    );
+    if (confirm !== 'Discard') return;
+    try {
+      await gitService.discardFiles(group.files);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Discard failed: ${err.message}`);
+    }
+  });
+
+  const stageFile = vscode.commands.registerCommand('gitGroupCommit.stageFile', async (item: FileItem) => {
+    if (!item) return;
+    try {
+      await gitService.stageFiles([item.filePath]);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Stage failed: ${err.message}`);
+    }
+  });
+
+  const unstageFile = vscode.commands.registerCommand('gitGroupCommit.unstageFile', async (item: FileItem) => {
+    if (!item) return;
+    try {
+      await gitService.unstageFiles([item.filePath]);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Unstage failed: ${err.message}`);
+    }
+  });
+
+  const discardFile = vscode.commands.registerCommand('gitGroupCommit.discardFile', async (item: FileItem) => {
+    if (!item) return;
+    const confirm = await vscode.window.showWarningMessage(
+      `Discard changes in "${item.filePath}"?`, { modal: true }, 'Discard'
+    );
+    if (confirm !== 'Discard') return;
+    try {
+      await gitService.discardFiles([item.filePath]);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Discard failed: ${err.message}`);
+    }
+  });
+
   let collapsed = false;
   const toggleCollapse = vscode.commands.registerCommand('gitGroupCommit.toggleCollapse', async () => {
     if (collapsed) {
@@ -195,6 +273,12 @@ export async function activate(context: vscode.ExtensionContext) {
     removeFromGroup,
     stageGroup,
     commitGroup,
+    commitStaged,
+    unstageGroup,
+    discardGroup,
+    stageFile,
+    unstageFile,
+    discardFile,
     toggleCollapse,
     refresh,
     openFile,

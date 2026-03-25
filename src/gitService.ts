@@ -78,6 +78,16 @@ export class GitService {
     await this.git('commit', '-m', message);
   }
 
+  async unstageFiles(files: string[]): Promise<void> {
+    if (files.length === 0) return;
+    await this.git('reset', 'HEAD', '--', ...files);
+  }
+
+  async discardFiles(files: string[]): Promise<void> {
+    if (files.length === 0) return;
+    await this.git('checkout', '--', ...files);
+  }
+
   async stageAndCommit(files: string[], message: string): Promise<void> {
     await this.stageFiles(files);
     await this.commit(message);
