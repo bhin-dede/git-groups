@@ -11,7 +11,7 @@
     "SCM Providers"
   ],
   "activationEvents": [
-    "onView:gitGroups"
+    "*"
   ],
   "main": "./out/extension.js",
   "contributes": {
