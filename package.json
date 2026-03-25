@@ -3,7 +3,11 @@
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
   "version": "0.1.0",
-  "publisher": "choi",
+  "publisher": "jo000206",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bhin-dede/git-groups"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
