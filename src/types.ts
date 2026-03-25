@@ -20,5 +20,6 @@ export type GitStatusCode =
 export interface GitFileStatus {
   path: string;
   status: GitStatusCode;
+  staged: boolean;
   originalPath?: string; // for renames
 }

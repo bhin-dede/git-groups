@@ -59,6 +59,12 @@
         "category": "Git Groups"
       },
       {
+        "command": "gitGroupCommit.toggleCollapse",
+        "title": "Toggle Collapse/Expand All",
+        "icon": "$(collapse-all)",
+        "category": "Git Groups"
+      },
+      {
         "command": "gitGroupCommit.refresh",
         "title": "Refresh",
         "icon": "$(refresh)",
@@ -90,7 +96,7 @@
     "menus": {
       "view/title": [
         {
-          "command": "gitGroupCommit.createGroup",
+          "command": "gitGroupCommit.toggleCollapse",
           "when": "view == gitGroups",
           "group": "navigation"
         },
@@ -101,6 +107,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "gitGroupCommit.createGroup",
+          "when": "view == gitGroups && viewItem == changesSection",
+          "group": "inline"
+        },
         {
           "command": "gitGroupCommit.stageGroup",
           "when": "view == gitGroups && viewItem == group",

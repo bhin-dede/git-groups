@@ -18,7 +18,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const treeView = vscode.window.createTreeView('gitGroups', {
     treeDataProvider: treeProvider,
-    showCollapseAll: true,
+    showCollapseAll: false,
     dragAndDropController: treeProvider,
     canSelectMany: true,
   });
@@ -152,6 +152,21 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  let collapsed = false;
+  const toggleCollapse = vscode.commands.registerCommand('gitGroupCommit.toggleCollapse', async () => {
+    if (collapsed) {
+      // Expand all
+      const roots = treeProvider.getRoots();
+      for (const root of roots) {
+        await treeView.reveal(root, { expand: 3, select: false, focus: false });
+      }
+    } else {
+      // Collapse all
+      await vscode.commands.executeCommand('workbench.actions.treeView.gitGroups.collapseAll');
+    }
+    collapsed = !collapsed;
+  });
+
   const refresh = vscode.commands.registerCommand('gitGroupCommit.refresh', async () => {
     await treeProvider.updateChangedFiles();
   });
@@ -180,6 +195,7 @@ export async function activate(context: vscode.ExtensionContext) {
     removeFromGroup,
     stageGroup,
     commitGroup,
+    toggleCollapse,
     refresh,
     openFile,
     openDiff

@@ -27,47 +27,42 @@ export class GitService {
     for (const line of output.split('\n')) {
       if (!line.trim()) continue;
 
-      const statusChar = line.substring(0, 2).trim();
-      let status: GitStatusCode;
-
-      switch (statusChar) {
-        case 'M':
-        case 'MM':
-        case 'AM':
-          status = 'M';
-          break;
-        case 'A':
-          status = 'A';
-          break;
-        case 'D':
-          status = 'D';
-          break;
-        case 'R':
-          status = 'R';
-          break;
-        case '??':
-          status = '?';
-          break;
-        case 'UU':
-        case 'AA':
-        case 'DD':
-          status = 'U';
-          break;
-        default:
-          status = 'M';
-      }
+      // git status --porcelain: XY format
+      // X = staged status, Y = unstaged status
+      const x = line[0]; // staged
+      const y = line[1]; // unstaged
 
       const pathPart = line.substring(3);
       const arrowIndex = pathPart.indexOf(' -> ');
+      const filePath = arrowIndex !== -1 ? pathPart.substring(arrowIndex + 4) : pathPart;
+      const originalPath = arrowIndex !== -1 ? pathPart.substring(0, arrowIndex) : undefined;
 
-      if (arrowIndex !== -1) {
-        files.push({
-          path: pathPart.substring(arrowIndex + 4),
-          status,
-          originalPath: pathPart.substring(0, arrowIndex),
-        });
-      } else {
-        files.push({ path: pathPart, status });
+      // Staged entry (X has a value, not ' ' or '?')
+      if (x !== ' ' && x !== '?') {
+        let status: GitStatusCode;
+        switch (x) {
+          case 'M': status = 'M'; break;
+          case 'A': status = 'A'; break;
+          case 'D': status = 'D'; break;
+          case 'R': status = 'R'; break;
+          case 'C': status = 'C'; break;
+          case 'U': status = 'U'; break;
+          default: status = 'M';
+        }
+        files.push({ path: filePath, status, staged: true, originalPath });
+      }
+
+      // Unstaged entry (Y has a value, not ' ')
+      if (y !== ' ') {
+        let status: GitStatusCode;
+        switch (y) {
+          case 'M': status = 'M'; break;
+          case 'D': status = 'D'; break;
+          case '?': status = '?'; break;
+          case 'U': status = 'U'; break;
+          default: status = 'M';
+        }
+        files.push({ path: filePath, status, staged: false });
       }
     }
 
