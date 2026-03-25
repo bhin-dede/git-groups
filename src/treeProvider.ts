@@ -4,9 +4,16 @@ import { GitService } from './gitService';
 import { GroupManager } from './groupManager';
 import { GitFileStatus, GitStatusCode } from './types';
 
-type TreeNode = SectionItem | GroupItem | FileItem;
+type TreeNode = SectionItem | SeparatorItem | GroupItem | FileItem;
 
 const MIME_TYPE = 'application/vnd.code.tree.gitGroups';
+
+export class SeparatorItem extends vscode.TreeItem {
+  constructor() {
+    super('──────────', vscode.TreeItemCollapsibleState.None);
+    this.contextValue = 'separator';
+  }
+}
 
 /** Top-level section: "Staged Changes" or "Changes" */
 export class SectionItem extends vscode.TreeItem {
@@ -34,9 +41,7 @@ export class GroupItem extends vscode.TreeItem {
     super(groupName, vscode.TreeItemCollapsibleState.Expanded);
     this.description = `${fileCount}`;
     this.contextValue = section === 'staged' ? 'stagedGroup' : 'changesGroup';
-    this.iconPath = groupId === '__ungrouped__'
-      ? new vscode.ThemeIcon('folder')
-      : new vscode.ThemeIcon('tag');
+    this.iconPath = new vscode.ThemeIcon('tag');
   }
 }
 
@@ -122,7 +127,7 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
 
     let targetGroupId: string | null = null;
 
-    if (target instanceof GroupItem && target.groupId !== '__ungrouped__') {
+    if (target instanceof GroupItem) {
       targetGroupId = target.groupId;
     } else if (target instanceof FileItem && target.groupId) {
       targetGroupId = target.groupId;
@@ -157,6 +162,12 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
 
       const unstagedFiles = this.changedFiles.filter(f => !f.staged);
       const hasGroups = this.groupManager.getAllGroups().length > 0;
+
+      // Separator between staged and changes
+      if (stagedFiles.length > 0 && (unstagedFiles.length > 0 || hasGroups)) {
+        items.push(new SeparatorItem());
+      }
+
       if (unstagedFiles.length > 0 || hasGroups) {
         items.push(new SectionItem('changes', unstagedFiles.length));
       }
@@ -180,15 +191,10 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
         }
       }
 
-      // Ungrouped files in this section
+      // Ungrouped files directly after groups
       const ungrouped = sectionFiles.filter(f => !groupedFiles.has(f.path));
-      if (ungrouped.length > 0) {
-        items.push(new GroupItem('__ungrouped__', 'Ungrouped', ungrouped.length, element.section));
-      }
-
-      // If no groups at all, just show files directly
-      if (items.length === 0) {
-        return sectionFiles.map(f => new FileItem(
+      for (const f of ungrouped) {
+        items.push(new FileItem(
           f.path, f.status, null,
           this.gitService.getWorkspaceRoot(), isStaged
         ));
@@ -201,16 +207,6 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
     if (element instanceof GroupItem) {
       const isStaged = element.section === 'staged';
       const sectionFiles = this.changedFiles.filter(f => f.staged === isStaged);
-
-      if (element.groupId === '__ungrouped__') {
-        const groupedFiles = this.groupManager.getGroupedFiles();
-        return sectionFiles
-          .filter(f => !groupedFiles.has(f.path))
-          .map(f => new FileItem(
-            f.path, f.status, null,
-            this.gitService.getWorkspaceRoot(), isStaged
-          ));
-      }
 
       const group = this.groupManager.getGroup(element.groupId);
       if (!group) return [];
