@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
@@ -13,6 +13,17 @@
   },
   "categories": [
     "SCM Providers"
+  ],
+  "keywords": [
+    "git",
+    "group",
+    "commit",
+    "staging",
+    "stash",
+    "source control",
+    "selective commit",
+    "organize",
+    "scm"
   ],
   "activationEvents": [
     "*"
