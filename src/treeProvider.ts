@@ -4,7 +4,7 @@ import { GitService } from './gitService';
 import { GroupManager } from './groupManager';
 import { GitFileStatus, GitStatusCode } from './types';
 
-type TreeNode = SectionItem | SeparatorItem | GroupItem | FileItem;
+type TreeNode = SectionItem | SeparatorItem | GroupItem | FileItem | StashItem | StashFileItem;
 
 const MIME_TYPE = 'application/vnd.code.tree.gitGroups';
 
@@ -15,18 +15,44 @@ export class SeparatorItem extends vscode.TreeItem {
   }
 }
 
+export class StashItem extends vscode.TreeItem {
+  constructor(
+    public readonly stashIndex: number,
+    public readonly stashMessage: string,
+    public readonly fileCount: number
+  ) {
+    super(stashMessage, vscode.TreeItemCollapsibleState.Collapsed);
+    this.description = `${fileCount} files`;
+    this.contextValue = 'stashItem';
+    this.iconPath = new vscode.ThemeIcon('archive');
+  }
+}
+
+export class StashFileItem extends vscode.TreeItem {
+  constructor(
+    public readonly filePath: string
+  ) {
+    super(path.basename(filePath), vscode.TreeItemCollapsibleState.None);
+    this.description = path.dirname(filePath) === '.' ? '' : path.dirname(filePath);
+    this.contextValue = 'stashFile';
+    this.iconPath = new vscode.ThemeIcon('file');
+  }
+}
+
 /** Top-level section: "Staged Changes" or "Changes" */
 export class SectionItem extends vscode.TreeItem {
   constructor(
-    public readonly section: 'staged' | 'changes',
+    public readonly section: 'staged' | 'changes' | 'stashes',
     fileCount: number
   ) {
-    super(
-      section === 'staged' ? 'Staged Changes' : 'Changes',
-      vscode.TreeItemCollapsibleState.Expanded
-    );
+    const labels: Record<string, string> = {
+      staged: 'Staged Changes',
+      changes: 'Changes',
+      stashes: 'Stashes',
+    };
+    super(labels[section], vscode.TreeItemCollapsibleState.Expanded);
     this.description = `${fileCount}`;
-    this.contextValue = section === 'staged' ? 'stagedSection' : 'changesSection';
+    this.contextValue = `${section}Section`;
   }
 }
 
@@ -36,12 +62,14 @@ export class GroupItem extends vscode.TreeItem {
     public readonly groupId: string,
     public readonly groupName: string,
     public readonly fileCount: number,
-    public readonly section: 'staged' | 'changes'
+    public readonly section: 'staged' | 'changes' | 'stashes'
   ) {
     super(groupName, vscode.TreeItemCollapsibleState.Expanded);
     this.description = `${fileCount}`;
     this.contextValue = section === 'staged' ? 'stagedGroup' : 'changesGroup';
-    this.iconPath = new vscode.ThemeIcon('tag');
+    this.iconPath = groupId === '__ungrouped__'
+      ? new vscode.ThemeIcon('folder')
+      : new vscode.ThemeIcon('tag');
   }
 }
 
@@ -89,6 +117,8 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
   readonly dragMimeTypes = [MIME_TYPE];
 
   private changedFiles: GitFileStatus[] = [];
+  private stashes: Array<{ index: number; message: string; files: string[] }> = [];
+
 
   constructor(
     private gitService: GitService,
@@ -102,6 +132,15 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
   async updateChangedFiles(): Promise<void> {
     this.changedFiles = await this.gitService.getChangedFiles();
     this.groupManager.pruneStaleFiles(this.changedFiles.map(f => f.path));
+
+    // Load stashes from groupManager (accurate file list)
+    const stashedGroups = this.groupManager.getStashedGroups();
+    this.stashes = stashedGroups.map(sg => ({
+      index: sg.stashIndex,
+      message: sg.name,
+      files: sg.files,
+    }));
+
     this.refresh();
   }
 
@@ -172,11 +211,25 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
         items.push(new SectionItem('changes', unstagedFiles.length));
       }
 
+      // Stashes
+      if (this.stashes.length > 0) {
+        const hasItemsAbove = stagedFiles.length > 0 || unstagedFiles.length > 0 || hasGroups;
+        if (hasItemsAbove) {
+          items.push(new SeparatorItem());
+        }
+        items.push(new SectionItem('stashes', this.stashes.length));
+      }
+
       return items;
     }
 
     // Section → show groups inside
     if (element instanceof SectionItem) {
+      // Stashes section
+      if (element.section === 'stashes') {
+        return this.stashes.map(s => new StashItem(s.index, s.message, s.files.length));
+      }
+
       const isStaged = element.section === 'staged';
       const sectionFiles = this.changedFiles.filter(f => f.staged === isStaged);
       const groups = this.groupManager.getAllGroups();
@@ -197,22 +250,46 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
         }
       }
 
-      // Ungrouped files directly after groups
+      // Ungrouped files
       const ungrouped = sectionFiles.filter(f => !groupedFiles.has(f.path));
-      for (const f of ungrouped) {
-        items.push(new FileItem(
-          f.path, f.status, null,
-          this.gitService.getWorkspaceRoot(), isStaged
-        ));
+      if (ungrouped.length > 0) {
+        const showAsGroup = vscode.workspace.getConfiguration('gitGroups').get<boolean>('showUngroupedSection', false);
+        if (showAsGroup) {
+          items.push(new GroupItem('__ungrouped__', 'Ungrouped', ungrouped.length, element.section));
+        } else {
+          for (const f of ungrouped) {
+            items.push(new FileItem(
+              f.path, f.status, null,
+              this.gitService.getWorkspaceRoot(), isStaged
+            ));
+          }
+        }
       }
 
       return items;
+    }
+
+    // Stash → show files
+    if (element instanceof StashItem) {
+      const stash = this.stashes.find(s => s.index === element.stashIndex);
+      if (!stash) return [];
+      return stash.files.map(f => new StashFileItem(f));
     }
 
     // Group → show files
     if (element instanceof GroupItem) {
       const isStaged = element.section === 'staged';
       const sectionFiles = this.changedFiles.filter(f => f.staged === isStaged);
+
+      if (element.groupId === '__ungrouped__') {
+        const groupedFiles = this.groupManager.getGroupedFiles();
+        return sectionFiles
+          .filter(f => !groupedFiles.has(f.path))
+          .map(f => new FileItem(
+            f.path, f.status, null,
+            this.gitService.getWorkspaceRoot(), isStaged
+          ));
+      }
 
       const group = this.groupManager.getGroup(element.groupId);
       if (!group) return [];

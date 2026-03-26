@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
@@ -146,6 +146,42 @@
         "title": "Generate Group Name with AI",
         "icon": "$(sparkle)",
         "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.stashGroup",
+        "title": "Stash Group",
+        "icon": "$(archive)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.popStash",
+        "title": "Pop Stash",
+        "icon": "$(debug-step-out)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.dropStash",
+        "title": "Drop Stash",
+        "icon": "$(trash)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.stashAll",
+        "title": "Stash All Changes",
+        "icon": "$(archive)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.popAllStash",
+        "title": "Pop All Stashes",
+        "icon": "$(debug-step-out)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.cleanEmptyGroups",
+        "title": "Clean Empty Groups",
+        "icon": "$(clear-all)",
+        "category": "Git Groups"
       }
     ],
     "viewsContainers": {},
@@ -166,14 +202,19 @@
           "group": "navigation@1"
         },
         {
-          "command": "gitGroupCommit.refresh",
+          "command": "gitGroupCommit.cleanEmptyGroups",
           "when": "view == gitGroups",
           "group": "navigation@2"
         },
         {
-          "command": "gitGroupCommit.toggleCollapse",
+          "command": "gitGroupCommit.refresh",
           "when": "view == gitGroups",
           "group": "navigation@3"
+        },
+        {
+          "command": "gitGroupCommit.toggleCollapse",
+          "when": "view == gitGroups",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
@@ -193,9 +234,14 @@
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.createGroup",
+          "command": "gitGroupCommit.stashAll",
           "when": "view == gitGroups && viewItem == changesSection",
           "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.createGroup",
+          "when": "view == gitGroups && viewItem == changesSection",
+          "group": "inline@3"
         },
         {
           "command": "gitGroupCommit.generateGroupName",
@@ -258,6 +304,26 @@
           "group": "inline@2"
         },
         {
+          "command": "gitGroupCommit.stashGroup",
+          "when": "view == gitGroups && viewItem == changesGroup",
+          "group": "inline@4"
+        },
+        {
+          "command": "gitGroupCommit.popAllStash",
+          "when": "view == gitGroups && viewItem == stashesSection",
+          "group": "inline"
+        },
+        {
+          "command": "gitGroupCommit.popStash",
+          "when": "view == gitGroups && viewItem == stashItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.dropStash",
+          "when": "view == gitGroups && viewItem == stashItem",
+          "group": "inline@2"
+        },
+        {
           "command": "gitGroupCommit.addToGroup",
           "when": "view == gitGroups && viewItem == ungroupedFile",
           "group": "1_group"
@@ -268,6 +334,26 @@
           "group": "1_group"
         }
       ]
+    },
+    "configuration": {
+      "title": "Git Groups",
+      "properties": {
+        "gitGroups.confirmDeleteGroup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confirmation dialog when deleting a group"
+        },
+        "gitGroups.confirmDropStash": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show confirmation dialog when dropping a stash"
+        },
+        "gitGroups.showUngroupedSection": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show ungrouped files inside an 'Ungrouped' group instead of listing them directly"
+        }
+      }
     },
     "keybindings": [
       {

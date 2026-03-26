@@ -34,8 +34,11 @@ export class GitService {
 
       const pathPart = line.substring(3);
       const arrowIndex = pathPart.indexOf(' -> ');
-      const filePath = arrowIndex !== -1 ? pathPart.substring(arrowIndex + 4) : pathPart;
-      const originalPath = arrowIndex !== -1 ? pathPart.substring(0, arrowIndex) : undefined;
+      const rawPath = arrowIndex !== -1 ? pathPart.substring(arrowIndex + 4) : pathPart;
+      const rawOriginal = arrowIndex !== -1 ? pathPart.substring(0, arrowIndex) : undefined;
+      // Strip quotes from filenames with spaces
+      const filePath = rawPath.replace(/^"(.*)"$/, '$1');
+      const originalPath = rawOriginal?.replace(/^"(.*)"$/, '$1');
 
       // Staged entry (X has a value, not ' ' or '?')
       if (x !== ' ' && x !== '?') {
@@ -85,7 +88,17 @@ export class GitService {
 
   async discardFiles(files: string[]): Promise<void> {
     if (files.length === 0) return;
-    await this.git('checkout', '--', ...files);
+    // Separate tracked and untracked files
+    const changedFiles = await this.getChangedFiles();
+    const untracked = files.filter(f => changedFiles.some(cf => cf.path === f && cf.status === '?'));
+    const tracked = files.filter(f => !untracked.includes(f));
+
+    if (tracked.length > 0) {
+      await this.git('checkout', '--', ...tracked);
+    }
+    if (untracked.length > 0) {
+      await this.git('clean', '-f', '--', ...untracked);
+    }
   }
 
   async undoLastCommit(): Promise<void> {
@@ -99,6 +112,40 @@ export class GitService {
   async getDiff(filePath: string, staged: boolean = false): Promise<string> {
     const args = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
     return this.git(...args);
+  }
+
+  async stashGroup(files: string[], message: string): Promise<void> {
+    await this.git('stash', 'push', '-u', '-m', message, '--', ...files);
+  }
+
+  async getStashList(): Promise<Array<{ index: number; message: string }>> {
+    const output = await this.git('stash', 'list', '--format=%gd||%s');
+    const stashes: Array<{ index: number; message: string }> = [];
+    for (const line of output.split('\n')) {
+      if (!line.trim()) continue;
+      const [ref, ...msgParts] = line.split('||');
+      const match = ref.match(/stash@\{(\d+)\}/);
+      if (match) {
+        let message = msgParts.join('||');
+        // Remove "On branch: " prefix that git adds
+        message = message.replace(/^On \S+: /, '');
+        stashes.push({ index: parseInt(match[1]), message });
+      }
+    }
+    return stashes;
+  }
+
+  async stashPop(index: number): Promise<void> {
+    await this.git('stash', 'pop', '--index', `stash@{${index}}`);
+  }
+
+  async stashDrop(index: number): Promise<void> {
+    await this.git('stash', 'drop', `stash@{${index}}`);
+  }
+
+  async getStashFiles(index: number): Promise<string[]> {
+    const output = await this.git('stash', 'show', `stash@{${index}}`, '--name-only');
+    return output.split('\n').filter(l => l.trim());
   }
 
   async stageAndCommit(files: string[], message: string): Promise<void> {

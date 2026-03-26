@@ -4,8 +4,16 @@ export interface FileGroup {
   files: string[]; // relative file paths
 }
 
+export interface StashedGroup {
+  name: string;
+  files: string[];
+  stashIndex: number;
+  originalGroups?: Array<{ name: string; files: string[] }>;
+}
+
 export interface GroupStoreData {
   groups: FileGroup[];
+  stashedGroups?: StashedGroup[];
 }
 
 export type GitStatusCode =

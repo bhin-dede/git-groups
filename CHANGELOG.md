@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0] - 2026-03-26
+
+### Added
+- 그룹별 Stash 기능 — Changes 그룹 옆 `[📦]` 버튼으로 개별 stash
+- 전체 Stash All — Changes 섹션 옆 `[📦]` 버튼, 그룹별로 각각 별도 stash 생성
+- 전체 Pop All — Stashes 섹션 옆 `[Pop All]` 버튼으로 모든 stash 한번에 복원
+- Stashes 섹션 — stash 목록 표시, 파일 목록 펼쳐서 확인 가능
+- 개별 Pop / Drop 버튼
+- Stash pop 시 그룹 자동 복원 (그룹명 + 파일 매핑 보존)
+- 빈 그룹 정리 기능 (Clean Empty Groups)
+- Ungrouped 표시 옵션 (`gitGroups.showUngroupedSection`) — 미분류 파일을 Ungrouped 그룹으로 묶을지 선택
+- 확인창 "Don't ask again" 옵션 (그룹 삭제, stash drop)
+- 설정 변경 시 자동 반영
+
+### Fixed
+- 파일명에 공백이 있을 때 따옴표 파싱 오류 수정
+- Untracked 파일 discard 시 `git clean -f` 사용하도록 수정
+- Stash 파일 목록이 꼬이는 문제 — groupManager에 정확한 파일 정보 저장
+
+### Changed
+- Discard 확인창은 항상 표시 (파일 삭제 위험이 있으므로 "Don't ask again" 없음)
+
 ## [0.4.0] - 2026-03-26
 
 ### Added

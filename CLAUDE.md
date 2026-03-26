@@ -43,12 +43,27 @@ SectionItem("Changes")
 ```
 
 ### contextValue 규칙 (메뉴 표시 조건에 사용)
-- `stagedSection` / `changesSection` — 섹션 헤더
+- `stagedSection` / `changesSection` / `stashesSection` — 섹션 헤더
 - `stagedGroup` / `changesGroup` — 그룹 (staged/changes 구분)
 - `stagedFile` — staged 파일
 - `groupedFile` — changes에서 그룹에 속한 파일
 - `ungroupedFile` — changes에서 그룹에 안 속한 파일
+- `stashItem` — stash 항목
+- `stashFile` — stash 내 파일
 - `separator` — 구분선
+
+### Stash 관리
+- 그룹별 stash: `git stash push -u -m "그룹명" -- files`
+- 그룹 정보는 `.vscode/git-groups.json`의 `stashedGroups`에 저장
+- stash index 관리: 새 stash 추가 시 기존 index 자동 증가, pop/drop 시 자동 감소
+- Pop 시 `originalGroups` 필드가 있으면 여러 그룹 복원, 없으면 단일 그룹 복원
+
+### 설정 (configuration)
+- `gitGroups.confirmDeleteGroup` — 그룹 삭제 확인창 (Don't ask again 가능)
+- `gitGroups.confirmDropStash` — stash drop 확인창 (Don't ask again 가능)
+- `gitGroups.showUngroupedSection` — 미분류 파일을 Ungrouped 그룹으로 묶을지
+- Discard 확인창은 항상 표시 (파일 삭제 위험)
+- 설정 변경 시 자동 반영 (`onDidChangeConfiguration`)
 
 ### 명령어 prefix
 모든 명령어는 `gitGroupCommit.` prefix 사용. 뷰 ID는 `gitGroups`.

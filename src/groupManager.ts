@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { FileGroup, GroupStoreData } from './types';
+import { FileGroup, GroupStoreData, StashedGroup } from './types';
 
 export class GroupManager {
   private groups: Map<string, FileGroup> = new Map();
+  private stashedGroups: StashedGroup[] = [];
   private storageUri: vscode.Uri;
   private _onDidChange = new vscode.EventEmitter<void>();
   readonly onDidChange = this._onDidChange.event;
@@ -24,6 +25,7 @@ export class GroupManager {
       for (const group of parsed.groups) {
         this.groups.set(group.id, group);
       }
+      this.stashedGroups = parsed.stashedGroups ?? [];
     } catch {
       // File doesn't exist yet, start fresh
     }
@@ -32,6 +34,7 @@ export class GroupManager {
   async save(): Promise<void> {
     const data: GroupStoreData = {
       groups: Array.from(this.groups.values()),
+      stashedGroups: this.stashedGroups,
     };
 
     // Ensure .vscode directory exists
@@ -137,6 +140,47 @@ export class GroupManager {
     if (changed) {
       this.saveAndNotify();
     }
+  }
+
+  cleanEmptyGroups(): number {
+    let count = 0;
+    for (const [id, group] of this.groups) {
+      if (group.files.length === 0) {
+        this.groups.delete(id);
+        count++;
+      }
+    }
+    if (count > 0) {
+      this.saveAndNotify();
+    }
+    return count;
+  }
+
+  addStashedGroup(name: string, files: string[], stashIndex: number, originalGroups?: Array<{ name: string; files: string[] }>): void {
+    // Increment existing stash indexes (new stash pushes others down)
+    for (const sg of this.stashedGroups) {
+      sg.stashIndex++;
+    }
+    this.stashedGroups.unshift({ name, files, stashIndex: 0, originalGroups });
+    this.saveAndNotify();
+  }
+
+  removeStashedGroup(stashIndex: number): StashedGroup | undefined {
+    const idx = this.stashedGroups.findIndex(sg => sg.stashIndex === stashIndex);
+    if (idx === -1) return undefined;
+    const removed = this.stashedGroups.splice(idx, 1)[0];
+    // Decrement indexes for stashes below the removed one
+    for (const sg of this.stashedGroups) {
+      if (sg.stashIndex > stashIndex) {
+        sg.stashIndex--;
+      }
+    }
+    this.saveAndNotify();
+    return removed;
+  }
+
+  getStashedGroups(): StashedGroup[] {
+    return this.stashedGroups;
   }
 
   private saveAndNotify(): void {

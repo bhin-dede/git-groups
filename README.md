@@ -86,7 +86,21 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 
 > GitHub Copilot이 설치되어 있어야 동작합니다. 없으면 안내 메시지가 표시됩니다.
 
-### 6. 마지막 커밋 되돌리기
+### 6. Stash
+
+**그룹별 Stash:**
+- Changes의 그룹 옆 `[📦]` 버튼 → 해당 그룹만 stash
+- Pop하면 그룹명 + 파일 매핑 그대로 복원
+
+**전체 Stash:**
+- Changes 옆 `[📦]` 버튼 → 그룹별로 각각 별도 stash 생성
+- Stashes 옆 `[Pop All]` 버튼으로 한번에 복원
+
+**Stash 관리:**
+- Stashes 섹션에서 목록 확인, 펼쳐서 파일 목록 보기
+- 개별 `[Pop]` / `[🗑 Drop]` 가능
+
+### 7. 마지막 커밋 되돌리기
 
 상단 `[↩]` 버튼을 클릭하면 마지막 커밋을 취소합니다.
 
@@ -94,7 +108,7 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 - `git reset --soft HEAD~1` 실행
 - 커밋은 취소되고 변경사항은 **Staged Changes**로 돌아감
 
-### 7. 기타
+### 8. 기타
 
 - **전체 접기/열기**: 상단 토글 버튼
 - **새로고침**: 상단 `[↻]` 버튼 (파일 변경 시 자동 갱신됨)
@@ -103,7 +117,7 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 ## 구조
 
 ```
-GIT GROUPS                    [↩][↻][접기/열기]
+GIT GROUPS                [↩][🧹][↻][접기/열기]
 ├── Staged Changes               [↓][✓]
 │   ├── 🏷 로그인 기능  [✨][↓][🗑][✓]
 │   │   ├── auth.ts          M    [↓]
@@ -112,11 +126,20 @@ GIT GROUPS                    [↩][↻][접기/열기]
 │
 ── ── ── ── ── ── ──
 │
-├── Changes                      [↑][+]
-│   ├── 🏷 버그 fix    [✨][↑][✗][🗑]
+├── Changes                   [↑][📦][+]
+│   ├── 🏷 버그 fix [✨][↑][✗][📦][🗑]
 │   │   └── utils.ts         M    [↑][✗]
 │   ├── readme.md            M    [↑][✗]
 │   └── app.py               M    [↑][✗]
+│
+── ── ── ── ── ── ──
+│
+├── Stashes                   [Pop All]
+│   ├── 📦 리팩토링      2 files  [Pop][🗑]
+│   │   ├── utils.ts
+│   │   └── helper.ts
+│   └── 📦 WIP           1 files  [Pop][🗑]
+│       └── temp.ts
 ```
 
 ## 기능 요약
@@ -129,11 +152,15 @@ GIT GROUPS                    [↩][↻][접기/열기]
 | 전체 Stage/Unstage | 한번에 전체 올리기/내리기 |
 | 그룹별 Commit | 그룹 단위로 커밋 (그룹명 = 커밋 메시지) |
 | 여러 그룹 일괄 커밋 | QuickPick으로 선택 → 그룹별 별도 커밋 |
+| 그룹별 Stash / Pop | 그룹 단위로 stash, pop 시 그룹 복원 |
+| 전체 Stash All / Pop All | 그룹별 각각 별도 stash, 한번에 복원 |
 | AI 그룹명 생성 | Copilot으로 diff 분석 후 자동 이름 생성 |
 | 마지막 커밋 되돌리기 | git reset --soft HEAD~1 |
+| 빈 그룹 정리 | 파일 0개인 그룹 한번에 삭제 |
 | 파일별 Stage/Unstage/Discard | 개별 파일 관리 |
+| Ungrouped 표시 옵션 | 미분류 파일을 그룹으로 묶을지 선택 |
 | 그룹 데이터 저장 | `.vscode/git-groups.json`에 자동 저장 |
-| 자동 새로고침 | 파일 변경 감지 시 자동 갱신 |
+| 자동 새로고침 | 파일/설정 변경 시 자동 갱신 |
 
 ## 라이선스
 
