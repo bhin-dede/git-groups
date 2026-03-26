@@ -152,15 +152,114 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   const commitStaged = vscode.commands.registerCommand('gitGroupCommit.commitStaged', async () => {
-    const message = await vscode.window.showInputBox({
-      prompt: 'Commit message',
-      placeHolder: 'Enter commit message...',
+    const changedFiles = await gitService.getChangedFiles();
+    const stagedFiles = changedFiles.filter(f => f.staged);
+    if (stagedFiles.length === 0) {
+      vscode.window.showWarningMessage('No staged files to commit.');
+      return;
+    }
+
+    const groups = groupManager.getAllGroups();
+    const groupedFiles = groupManager.getGroupedFiles();
+
+    // Build list: groups with staged files + ungrouped staged files
+    interface CommitItem extends vscode.QuickPickItem {
+      groupId?: string;
+      files: string[];
+      commitMessage: string;
+    }
+
+    const items: CommitItem[] = [];
+
+    for (const group of groups) {
+      const stagedInGroup = stagedFiles.filter(f => group.files.includes(f.path));
+      if (stagedInGroup.length > 0) {
+        items.push({
+          label: `$(tag) ${group.name}`,
+          description: `${stagedInGroup.length} files`,
+          picked: true,
+          groupId: group.id,
+          files: stagedInGroup.map(f => f.path),
+          commitMessage: group.name,
+        });
+      }
+    }
+
+    // Ungrouped staged files
+    const ungroupedStaged = stagedFiles.filter(f => !groupedFiles.has(f.path));
+    if (ungroupedStaged.length > 0) {
+      items.push({
+        label: `$(file) Ungrouped`,
+        description: `${ungroupedStaged.length} files`,
+        picked: true,
+        files: ungroupedStaged.map(f => f.path),
+        commitMessage: '',
+      });
+    }
+
+    if (items.length === 0) return;
+
+    // If only ungrouped files, just do a normal commit
+    if (items.length === 1 && !items[0].groupId) {
+      const message = await vscode.window.showInputBox({
+        prompt: 'Commit message',
+        placeHolder: 'Enter commit message...',
+      });
+      if (!message) return;
+      try {
+        await gitService.commit(message);
+        vscode.window.showInformationMessage(`Committed: "${message}"`);
+        await treeProvider.updateChangedFiles();
+      } catch (err: any) {
+        vscode.window.showErrorMessage(`Commit failed: ${err.message}`);
+      }
+      return;
+    }
+
+    // Show QuickPick with groups
+    const selected = await vscode.window.showQuickPick(items, {
+      canPickMany: true,
+      placeHolder: 'Select groups to commit (each group = separate commit)',
     });
-    if (!message) return;
+
+    if (!selected || selected.length === 0) return;
 
     try {
-      await gitService.commit(message);
-      vscode.window.showInformationMessage(`Committed: "${message}"`);
+      for (const item of selected) {
+        let message = item.commitMessage;
+
+        if (!message) {
+          const input = await vscode.window.showInputBox({
+            prompt: `Commit message for "${item.label}"`,
+            placeHolder: 'Enter commit message...',
+          });
+          if (!input) continue;
+          message = input;
+        }
+
+        // Unstage everything, then stage only this group's files, then commit
+        const allStaged = (await gitService.getChangedFiles()).filter(f => f.staged).map(f => f.path);
+        if (allStaged.length > 0) {
+          await gitService.unstageFiles(allStaged);
+        }
+        await gitService.stageFiles(item.files);
+        await gitService.commit(message);
+
+        // Clean up group
+        if (item.groupId) {
+          groupManager.deleteGroup(item.groupId);
+        }
+      }
+
+      // Re-stage files that were originally staged but not committed
+      const originalStaged = stagedFiles.map(f => f.path);
+      const committedFiles = selected.flatMap(s => s.files);
+      const toRestage = originalStaged.filter(f => !committedFiles.includes(f));
+      if (toRestage.length > 0) {
+        await gitService.stageFiles(toRestage);
+      }
+
+      vscode.window.showInformationMessage(`Committed ${selected.length} group(s).`);
       await treeProvider.updateChangedFiles();
     } catch (err: any) {
       vscode.window.showErrorMessage(`Commit failed: ${err.message}`);
@@ -239,7 +338,8 @@ export async function activate(context: vscode.ExtensionContext) {
       const diffs: string[] = [];
       for (const filePath of group.files) {
         try {
-          const diff = await gitService.getDiff(filePath, true);
+          const isStaged = item.section === 'staged';
+          const diff = await gitService.getDiff(filePath, isStaged);
           if (diff) {
             diffs.push(`--- ${filePath} ---\n${diff.substring(0, 500)}`);
           }
@@ -312,6 +412,21 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const undoLastCommit = vscode.commands.registerCommand('gitGroupCommit.undoLastCommit', async () => {
+    try {
+      const lastMsg = await gitService.getLastCommitMessage();
+      const confirm = await vscode.window.showWarningMessage(
+        `Undo last commit: "${lastMsg}"?`, { modal: true }, 'Undo'
+      );
+      if (confirm !== 'Undo') return;
+      await gitService.undoLastCommit();
+      vscode.window.showInformationMessage(`Undone: "${lastMsg}" — changes moved to staged.`);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Undo failed: ${err.message}`);
+    }
+  });
+
   let collapsed = false;
   const toggleCollapse = vscode.commands.registerCommand('gitGroupCommit.toggleCollapse', async () => {
     if (collapsed) {
@@ -362,6 +477,7 @@ export async function activate(context: vscode.ExtensionContext) {
     unstageFile,
     discardFile,
     generateGroupName,
+    undoLastCommit,
     stageAll,
     unstageAll,
     toggleCollapse,

@@ -1,11 +1,12 @@
 # Changelog
 
-## [0.3.0] - 2026-03-26
+## [0.4.0] - 2026-03-26
 
 ### Added
-- AI 그룹명 자동 생성 (GitHub Copilot 연동, `[✨]` 버튼)
+- AI 그룹명 자동 생성 (GitHub Copilot 연동, `[✨]` 버튼) — Staged/Changes 모두 지원
 - 전체 Stage All / Unstage All 버튼
-- Staged Changes 섹션에 커밋 버튼
+- Staged Changes 섹션에 그룹별 커밋 기능 (QuickPick으로 그룹 선택 → 각각 별도 커밋)
+- 마지막 커밋 되돌리기 (Undo Last Commit) — `git reset --soft HEAD~1`
 - 그룹별 Commit / Unstage (Staged Changes)
 - 그룹별 Stage / Discard (Changes)
 - 개별 파일 Stage / Unstage / Discard

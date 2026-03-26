@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
@@ -136,6 +136,12 @@
         "category": "Git Groups"
       },
       {
+        "command": "gitGroupCommit.undoLastCommit",
+        "title": "Undo Last Commit",
+        "icon": "$(discard)",
+        "category": "Git Groups"
+      },
+      {
         "command": "gitGroupCommit.generateGroupName",
         "title": "Generate Group Name with AI",
         "icon": "$(sparkle)",
@@ -155,24 +161,29 @@
     "menus": {
       "view/title": [
         {
-          "command": "gitGroupCommit.toggleCollapse",
+          "command": "gitGroupCommit.undoLastCommit",
           "when": "view == gitGroups",
-          "group": "navigation"
+          "group": "navigation@1"
         },
         {
           "command": "gitGroupCommit.refresh",
           "when": "view == gitGroups",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "gitGroupCommit.toggleCollapse",
+          "when": "view == gitGroups",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [
         {
-          "command": "gitGroupCommit.commitStaged",
+          "command": "gitGroupCommit.unstageAll",
           "when": "view == gitGroups && viewItem == stagedSection",
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.unstageAll",
+          "command": "gitGroupCommit.commitStaged",
           "when": "view == gitGroups && viewItem == stagedSection",
           "group": "inline@2"
         },
@@ -192,24 +203,29 @@
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.commitGroup",
+          "command": "gitGroupCommit.unstageGroup",
           "when": "view == gitGroups && viewItem == stagedGroup",
           "group": "inline@2"
         },
         {
-          "command": "gitGroupCommit.unstageGroup",
+          "command": "gitGroupCommit.commitGroup",
           "when": "view == gitGroups && viewItem == stagedGroup",
-          "group": "inline@3"
+          "group": "inline@4"
         },
         {
-          "command": "gitGroupCommit.stageGroup",
+          "command": "gitGroupCommit.generateGroupName",
           "when": "view == gitGroups && viewItem == changesGroup",
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.discardGroup",
+          "command": "gitGroupCommit.stageGroup",
           "when": "view == gitGroups && viewItem == changesGroup",
           "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.discardGroup",
+          "when": "view == gitGroups && viewItem == changesGroup",
+          "group": "inline@3"
         },
         {
           "command": "gitGroupCommit.deleteGroup",

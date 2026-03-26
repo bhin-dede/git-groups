@@ -88,6 +88,14 @@ export class GitService {
     await this.git('checkout', '--', ...files);
   }
 
+  async undoLastCommit(): Promise<void> {
+    await this.git('reset', '--soft', 'HEAD~1');
+  }
+
+  async getLastCommitMessage(): Promise<string> {
+    return (await this.git('log', '-1', '--pretty=%s')).trim();
+  }
+
   async getDiff(filePath: string, staged: boolean = false): Promise<string> {
     const args = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
     return this.git(...args);
