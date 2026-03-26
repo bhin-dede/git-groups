@@ -122,6 +122,18 @@
         "title": "Discard Changes",
         "icon": "$(discard)",
         "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.stageAll",
+        "title": "Stage All",
+        "icon": "$(arrow-up)",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.unstageAll",
+        "title": "Unstage All",
+        "icon": "$(arrow-down)",
+        "category": "Git Groups"
       }
     ],
     "viewsContainers": {},
@@ -151,12 +163,22 @@
         {
           "command": "gitGroupCommit.commitStaged",
           "when": "view == gitGroups && viewItem == stagedSection",
-          "group": "inline"
+          "group": "inline@1"
+        },
+        {
+          "command": "gitGroupCommit.unstageAll",
+          "when": "view == gitGroups && viewItem == stagedSection",
+          "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.stageAll",
+          "when": "view == gitGroups && viewItem == changesSection",
+          "group": "inline@1"
         },
         {
           "command": "gitGroupCommit.createGroup",
           "when": "view == gitGroups && viewItem == changesSection",
-          "group": "inline"
+          "group": "inline@2"
         },
         {
           "command": "gitGroupCommit.commitGroup",

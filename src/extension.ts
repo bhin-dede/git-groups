@@ -230,6 +230,30 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const stageAll = vscode.commands.registerCommand('gitGroupCommit.stageAll', async () => {
+    const changedFiles = await gitService.getChangedFiles();
+    const unstaged = changedFiles.filter(f => !f.staged).map(f => f.path);
+    if (unstaged.length === 0) return;
+    try {
+      await gitService.stageFiles(unstaged);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Stage all failed: ${err.message}`);
+    }
+  });
+
+  const unstageAll = vscode.commands.registerCommand('gitGroupCommit.unstageAll', async () => {
+    const changedFiles = await gitService.getChangedFiles();
+    const staged = changedFiles.filter(f => f.staged).map(f => f.path);
+    if (staged.length === 0) return;
+    try {
+      await gitService.unstageFiles(staged);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Unstage all failed: ${err.message}`);
+    }
+  });
+
   let collapsed = false;
   const toggleCollapse = vscode.commands.registerCommand('gitGroupCommit.toggleCollapse', async () => {
     if (collapsed) {
@@ -279,6 +303,8 @@ export async function activate(context: vscode.ExtensionContext) {
     stageFile,
     unstageFile,
     discardFile,
+    stageAll,
+    unstageAll,
     toggleCollapse,
     refresh,
     openFile,
