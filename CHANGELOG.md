@@ -13,6 +13,7 @@
 - Staged Changes ↔ Changes 구분선
 
 ### Changed
+- 커밋 시 그룹명을 커밋 메시지 기본값으로 표시
 - 그룹 Stage 시 Changes에서 빈 그룹 자동 숨김
 - Ungrouped 섹션 제거, 그룹 없는 파일은 아래에 직접 표시
 

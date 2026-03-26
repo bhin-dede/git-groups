@@ -137,7 +137,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const message = await vscode.window.showInputBox({
       prompt: `Commit message for "${group.name}"`,
-      placeHolder: 'Enter commit message...',
+      value: group.name,
     });
     if (!message) return;
 
