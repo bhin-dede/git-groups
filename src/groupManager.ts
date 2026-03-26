@@ -31,6 +31,22 @@ export class GroupManager {
     }
   }
 
+  async ensureGitignore(): Promise<void> {
+    const gitignorePath = vscode.Uri.joinPath(vscode.Uri.file(this.workspaceRoot), '.gitignore');
+    const entry = '.vscode/git-groups.json';
+    try {
+      const data = await vscode.workspace.fs.readFile(gitignorePath);
+      const content = Buffer.from(data).toString('utf-8');
+      if (!content.includes(entry)) {
+        const newContent = content.endsWith('\n') ? content + entry + '\n' : content + '\n' + entry + '\n';
+        await vscode.workspace.fs.writeFile(gitignorePath, Buffer.from(newContent, 'utf-8'));
+      }
+    } catch {
+      // No .gitignore exists, create one
+      await vscode.workspace.fs.writeFile(gitignorePath, Buffer.from(entry + '\n', 'utf-8'));
+    }
+  }
+
   async save(): Promise<void> {
     const data: GroupStoreData = {
       groups: Array.from(this.groups.values()),
@@ -183,7 +199,13 @@ export class GroupManager {
     return this.stashedGroups;
   }
 
+  private gitignoreChecked = false;
+
   private saveAndNotify(): void {
+    if (!this.gitignoreChecked) {
+      this.gitignoreChecked = true;
+      this.ensureGitignore().catch(() => {});
+    }
     this.save().catch(err => console.error('Failed to save groups:', err));
     this._onDidChange.fire();
   }

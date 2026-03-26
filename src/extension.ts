@@ -410,6 +410,12 @@ export async function activate(context: vscode.ExtensionContext) {
   const popStash = vscode.commands.registerCommand('gitGroupCommit.popStash', async (item: StashItem) => {
     if (!item) return;
     try {
+      const verified = await gitService.verifyStashIndex(item.stashIndex, item.stashMessage);
+      if (!verified) {
+        vscode.window.showErrorMessage('Stash index mismatch. Refreshing...');
+        await treeProvider.updateChangedFiles();
+        return;
+      }
       const stashedGroup = groupManager.removeStashedGroup(item.stashIndex);
       await gitService.stashPop(item.stashIndex);
       // Recreate groups
@@ -490,6 +496,12 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
     try {
+      const verified = await gitService.verifyStashIndex(item.stashIndex, item.stashMessage);
+      if (!verified) {
+        vscode.window.showErrorMessage('Stash index mismatch. Refreshing...');
+        await treeProvider.updateChangedFiles();
+        return;
+      }
       groupManager.removeStashedGroup(item.stashIndex);
       await gitService.stashDrop(item.stashIndex);
       await treeProvider.updateChangedFiles();

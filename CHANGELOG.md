@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0] - 2026-03-26
+
+### Added
+- 외부 stash(터미널 등) Stashes 섹션에 표시 — 회색 아이콘 + `(external)`, Pop/Drop 가능
+- Stash index 검증 — pop/drop 전 실제 git stash list와 비교, 불일치 시 에러 방지
+- `.vscode/git-groups.json` 자동 gitignore — 첫 그룹 저장 시 사용자 프로젝트 `.gitignore`에 자동 추가
+- LICENSE (MIT) 파일 추가
+- Stash 시 `.vscode/git-groups.json` 자동 제외
+
+### Fixed
+- stash pop 시 `git-groups.json already exists` 오류 수정
+
 ## [0.5.0] - 2026-03-26
 
 ### Added

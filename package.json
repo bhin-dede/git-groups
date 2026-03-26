@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
@@ -326,12 +326,12 @@
         },
         {
           "command": "gitGroupCommit.popStash",
-          "when": "view == gitGroups && viewItem == stashItem",
+          "when": "view == gitGroups && viewItem =~ /stashItem$/",
           "group": "inline@1"
         },
         {
           "command": "gitGroupCommit.dropStash",
-          "when": "view == gitGroups && viewItem == stashItem",
+          "when": "view == gitGroups && viewItem =~ /stashItem$/",
           "group": "inline@2"
         },
         {

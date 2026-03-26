@@ -19,12 +19,15 @@ export class StashItem extends vscode.TreeItem {
   constructor(
     public readonly stashIndex: number,
     public readonly stashMessage: string,
-    public readonly fileCount: number
+    public readonly fileCount: number,
+    public readonly external: boolean = false
   ) {
     super(stashMessage, vscode.TreeItemCollapsibleState.Collapsed);
-    this.description = `${fileCount} files`;
-    this.contextValue = 'stashItem';
-    this.iconPath = new vscode.ThemeIcon('archive');
+    this.description = external ? `${fileCount} files (external)` : `${fileCount} files`;
+    this.contextValue = external ? 'externalStashItem' : 'stashItem';
+    this.iconPath = external
+      ? new vscode.ThemeIcon('archive', new vscode.ThemeColor('disabledForeground'))
+      : new vscode.ThemeIcon('archive');
   }
 }
 
@@ -117,7 +120,7 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
   readonly dragMimeTypes = [MIME_TYPE];
 
   private changedFiles: GitFileStatus[] = [];
-  private stashes: Array<{ index: number; message: string; files: string[] }> = [];
+  private stashes: Array<{ index: number; message: string; files: string[]; external: boolean }> = [];
 
 
   constructor(
@@ -133,13 +136,35 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
     this.changedFiles = await this.gitService.getChangedFiles();
     this.groupManager.pruneStaleFiles(this.changedFiles.map(f => f.path));
 
-    // Load stashes from groupManager (accurate file list)
+    // Load stashes: groupManager (ours) + git stash list (external)
     const stashedGroups = this.groupManager.getStashedGroups();
+    const managedIndexes = new Set(stashedGroups.map(sg => sg.stashIndex));
+
     this.stashes = stashedGroups.map(sg => ({
       index: sg.stashIndex,
       message: sg.name,
       files: sg.files,
+      external: false,
     }));
+
+    try {
+      const gitStashes = await this.gitService.getStashList();
+      for (const gs of gitStashes) {
+        if (!managedIndexes.has(gs.index)) {
+          const files = await this.gitService.getStashFiles(gs.index);
+          this.stashes.push({
+            index: gs.index,
+            message: gs.message,
+            files,
+            external: true,
+          });
+        }
+      }
+      // Sort by index
+      this.stashes.sort((a, b) => a.index - b.index);
+    } catch {
+      // git stash list failed, just show managed ones
+    }
 
     this.refresh();
   }
@@ -227,7 +252,7 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
     if (element instanceof SectionItem) {
       // Stashes section
       if (element.section === 'stashes') {
-        return this.stashes.map(s => new StashItem(s.index, s.message, s.files.length));
+        return this.stashes.map(s => new StashItem(s.index, s.message, s.files.length, s.external));
       }
 
       const isStaged = element.section === 'staged';

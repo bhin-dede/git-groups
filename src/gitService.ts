@@ -115,7 +115,9 @@ export class GitService {
   }
 
   async stashGroup(files: string[], message: string): Promise<void> {
-    await this.git('stash', 'push', '-u', '-m', message, '--', ...files);
+    const filtered = files.filter(f => f !== '.vscode/git-groups.json');
+    if (filtered.length === 0) return;
+    await this.git('stash', 'push', '-u', '-m', message, '--', ...filtered);
   }
 
   async getStashList(): Promise<Array<{ index: number; message: string }>> {
@@ -135,8 +137,15 @@ export class GitService {
     return stashes;
   }
 
+  async verifyStashIndex(index: number, expectedName: string): Promise<boolean> {
+    const stashes = await this.getStashList();
+    const stash = stashes.find(s => s.index === index);
+    if (!stash) return false;
+    return stash.message.includes(expectedName);
+  }
+
   async stashPop(index: number): Promise<void> {
-    await this.git('stash', 'pop', '--index', `stash@{${index}}`);
+    await this.git('stash', 'pop', `stash@{${index}}`);
   }
 
   async stashDrop(index: number): Promise<void> {
