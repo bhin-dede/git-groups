@@ -183,11 +183,17 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
       const groupedFiles = this.groupManager.getGroupedFiles();
       const items: TreeNode[] = [];
 
-      // Groups (show empty groups in changes section so users can drag files in)
+      // Groups: show if has files, or in changes section when no files are staged for this group
       for (const group of groups) {
         const filesInGroup = sectionFiles.filter(f => group.files.includes(f.path));
-        if (filesInGroup.length > 0 || !isStaged) {
+        const stagedFilesInGroup = this.changedFiles.filter(f => f.staged && group.files.includes(f.path));
+
+        if (filesInGroup.length > 0) {
+          // Has files in this section → show
           items.push(new GroupItem(group.id, group.name, filesInGroup.length, element.section));
+        } else if (!isStaged && stagedFilesInGroup.length === 0) {
+          // Empty in changes AND nothing staged → show empty group for drag & drop
+          items.push(new GroupItem(group.id, group.name, 0, element.section));
         }
       }
 

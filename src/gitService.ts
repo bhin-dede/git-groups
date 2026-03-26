@@ -88,6 +88,11 @@ export class GitService {
     await this.git('checkout', '--', ...files);
   }
 
+  async getDiff(filePath: string, staged: boolean = false): Promise<string> {
+    const args = staged ? ['diff', '--cached', '--', filePath] : ['diff', '--', filePath];
+    return this.git(...args);
+  }
+
   async stageAndCommit(files: string[], message: string): Promise<void> {
     await this.stageFiles(files);
     await this.commit(message);

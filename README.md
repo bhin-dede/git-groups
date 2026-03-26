@@ -51,7 +51,7 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 ### 3. 그룹 단위로 커밋하기
 
 **방법 A: 그룹째로 커밋**
-1. Changes의 그룹 옆 `[↑]` 버튼으로 Stage
+1. Changes의 그룹 옆 `[↑]` 버튼으로 Stage (그룹이 Staged Changes로 이동)
 2. Staged Changes에서 그룹 옆 `[✓]` 버튼 클릭
 3. 커밋 메시지 입력 → 완료
 
@@ -60,13 +60,25 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 - Staged 파일 옆 `[↓]` → Unstage
 - Changes 파일 옆 `[✗]` → 작업 되돌리기 (discard)
 
+**전체 Stage/Unstage**
+- Changes 옆 `[↑]` → 전체 Stage
+- Staged Changes 옆 `[↓]` → 전체 Unstage
+
 ### 4. 그룹 관리
 
 - **이름 변경**: 그룹 선택 후 `F2`, 또는 우클릭 → `Rename Group`
 - **삭제**: 그룹 옆 `[🗑]` 버튼, 또는 우클릭 → `Delete Group`
 - **파일 제거**: 그룹 내 파일 우클릭 → `Remove from Group`
 
-### 5. 기타
+### 5. AI 그룹명 생성 (GitHub Copilot 필요)
+
+Staged Changes의 그룹 옆 `[✨]` 버튼을 클릭하면, diff를 분석해서 그룹명을 자동 생성합니다.
+
+예: `feat: add user authentication`, `fix: resolve login timeout`
+
+> GitHub Copilot이 설치되어 있어야 동작합니다.
+
+### 6. 기타
 
 - **전체 접기/열기**: 상단 토글 버튼
 - **새로고침**: 상단 `[↻]` 버튼 (파일 변경 시 자동 갱신됨)
@@ -76,15 +88,15 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 
 ```
 GIT GROUPS
-├── Staged Changes                    [✓ 커밋]
-│   ├── 🏷 로그인 기능    [✓][↓][🗑]
+├── Staged Changes               [✓ 커밋][↓]
+│   ├── 🏷 로그인 기능  [✨][✓][↓][🗑]
 │   │   ├── auth.ts          M
 │   │   └── login.vue        M
 │   └── config.yaml          A       [↓]
 │
 ── ── ── ── ── ── ──
 │
-├── Changes                           [+]
+├── Changes                        [↑][+]
 │   ├── 🏷 버그 fix       [↑][✗][🗑]
 │   │   └── utils.ts         M
 │   ├── readme.md            M       [↑][✗]
@@ -98,7 +110,9 @@ GIT GROUPS
 | 그룹 생성/삭제/이름변경 | 파일을 논리적으로 분류 |
 | 드래그 & 드롭 | 파일을 그룹 간 이동 |
 | 그룹별 Stage/Unstage | 그룹 단위로 git add/reset |
+| 전체 Stage/Unstage | 한번에 전체 올리기/내리기 |
 | 그룹별 Commit | 그룹 단위로 커밋 |
+| AI 그룹명 생성 | Copilot으로 diff 분석 후 자동 이름 생성 |
 | 파일별 Stage/Unstage/Discard | 개별 파일 관리 |
 | 그룹 데이터 저장 | `.vscode/git-groups.json`에 자동 저장 |
 | 자동 새로고침 | 파일 변경 감지 시 자동 갱신 |

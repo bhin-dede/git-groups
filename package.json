@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
@@ -134,6 +134,12 @@
         "title": "Unstage All",
         "icon": "$(arrow-down)",
         "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.generateGroupName",
+        "title": "Generate Group Name with AI",
+        "icon": "$(sparkle)",
+        "category": "Git Groups"
       }
     ],
     "viewsContainers": {},
@@ -181,14 +187,19 @@
           "group": "inline@2"
         },
         {
-          "command": "gitGroupCommit.commitGroup",
+          "command": "gitGroupCommit.generateGroupName",
           "when": "view == gitGroups && viewItem == stagedGroup",
           "group": "inline@1"
         },
         {
-          "command": "gitGroupCommit.unstageGroup",
+          "command": "gitGroupCommit.commitGroup",
           "when": "view == gitGroups && viewItem == stagedGroup",
           "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.unstageGroup",
+          "when": "view == gitGroups && viewItem == stagedGroup",
+          "group": "inline@3"
         },
         {
           "command": "gitGroupCommit.stageGroup",

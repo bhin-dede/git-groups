@@ -121,7 +121,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     try {
       await gitService.stageFiles(group.files);
-      vscode.window.showInformationMessage(`Staged ${group.files.length} files from "${group.name}".`);
       await treeProvider.updateChangedFiles();
     } catch (err: any) {
       vscode.window.showErrorMessage(`Stage failed: ${err.message}`);
@@ -230,6 +229,65 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const generateGroupName = vscode.commands.registerCommand('gitGroupCommit.generateGroupName', async (item: GroupItem) => {
+    if (!item) return;
+    const group = groupManager.getGroup(item.groupId);
+    if (!group || group.files.length === 0) return;
+
+    try {
+      // Get diffs for files in this group
+      const diffs: string[] = [];
+      for (const filePath of group.files) {
+        try {
+          const diff = await gitService.getDiff(filePath, true);
+          if (diff) {
+            diffs.push(`--- ${filePath} ---\n${diff.substring(0, 500)}`);
+          }
+        } catch {
+          diffs.push(`--- ${filePath} (no diff) ---`);
+        }
+      }
+
+      const diffSummary = diffs.join('\n\n');
+
+      // Use VS Code Language Model API
+      const models = await vscode.lm.selectChatModels({ family: 'gpt-4o' });
+      let model = models[0];
+      if (!model) {
+        const allModels = await vscode.lm.selectChatModels();
+        model = allModels[0];
+      }
+      if (!model) {
+        vscode.window.showWarningMessage('No AI model available. Please install GitHub Copilot.');
+        return;
+      }
+
+      const messages = [
+        vscode.LanguageModelChatMessage.User(
+          `Based on the following git diff, suggest a concise group name that describes what was changed. Format: "type: description" (e.g. "feat: add user authentication", "fix: resolve login timeout", "refactor: extract validation logic"). The description should be specific about WHAT was done, not just the type. Max 8 words total. Reply with ONLY the group name, nothing else.\n\nFiles: ${group.files.join(', ')}\n\nDiff:\n${diffSummary}`
+        ),
+      ];
+
+      const response = await model.sendRequest(messages, {});
+      let name = '';
+      for await (const chunk of response.text) {
+        name += chunk;
+      }
+
+      name = name.trim().replace(/^["']|["']$/g, '');
+      if (!name) return;
+
+      groupManager.renameGroup(item.groupId, name);
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      if (err?.message?.includes('consent')) {
+        vscode.window.showWarningMessage('Please allow Copilot access for Git Groups extension.');
+      } else {
+        vscode.window.showErrorMessage(`AI generation failed: ${err.message}`);
+      }
+    }
+  });
+
   const stageAll = vscode.commands.registerCommand('gitGroupCommit.stageAll', async () => {
     const changedFiles = await gitService.getChangedFiles();
     const unstaged = changedFiles.filter(f => !f.staged).map(f => f.path);
@@ -303,6 +361,7 @@ export async function activate(context: vscode.ExtensionContext) {
     stageFile,
     unstageFile,
     discardFile,
+    generateGroupName,
     stageAll,
     unstageAll,
     toggleCollapse,
