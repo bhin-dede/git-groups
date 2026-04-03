@@ -69,6 +69,7 @@ Open the Source Control tab (`Ctrl+Shift+G`) and find the **GIT GROUPS** section
 - `[↑]` on a file → Stage
 - `[↓]` on a staged file → Unstage
 - `[✗]` on a file → Discard changes
+- `[📦]` on a file → Stash individual file (restores to original group on pop)
 
 **Stage/Unstage All**
 - `[↑]` on Changes section → Stage all
@@ -160,7 +161,7 @@ GIT GROUPS                [↩][🧹][↻][toggle]
 | AI Group Name | Copilot analyzes diff and suggests group name |
 | Undo Last Commit | git reset --soft HEAD~1 |
 | Clean Empty Groups | Delete all groups with 0 files |
-| Per-file Stage/Unstage/Discard | Individual file management |
+| Per-file Stage/Unstage/Discard/Stash | Individual file management |
 | Ungrouped display option | Show ungrouped files in a group or directly |
 | Group data persistence | Auto-saved to `.vscode/git-groups.json` |
 | Auto-refresh | Refreshes on file and settings changes |

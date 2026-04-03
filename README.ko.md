@@ -67,6 +67,7 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 - Changes 파일 옆 `[↑]` → Stage
 - Staged 파일 옆 `[↓]` → Unstage
 - Changes 파일 옆 `[✗]` → 작업 되돌리기 (discard)
+- Changes 파일 옆 `[📦]` → 개별 파일 Stash (pop 시 원래 그룹으로 복원)
 
 **전체 Stage/Unstage**
 - Changes 옆 `[↑]` → 전체 Stage

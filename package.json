@@ -135,6 +135,12 @@
         "category": "Git Groups"
       },
       {
+        "command": "gitGroupCommit.stashFile",
+        "title": "Stash File",
+        "icon": "$(archive)",
+        "category": "Git Groups"
+      },
+      {
         "command": "gitGroupCommit.stageAll",
         "title": "Stage All",
         "icon": "$(arrow-up)",
@@ -313,6 +319,12 @@
           "command": "gitGroupCommit.discardFile",
           "when": "view == gitGroups && viewItem =~ /^(ungroupedFile|groupedFile)$/",
           "group": "inline@2"
+        },
+        {
+          "command": "gitGroupCommit.stashFile",
+          "title": "Stash File",
+          "when": "view == gitGroups && viewItem =~ /^(ungroupedFile|groupedFile)$/",
+          "group": "inline@3"
         },
         {
           "command": "gitGroupCommit.stashGroup",

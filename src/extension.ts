@@ -328,6 +328,27 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
+  const stashFile = vscode.commands.registerCommand('gitGroupCommit.stashFile', async (item: FileItem) => {
+    if (!item) return;
+    try {
+      // Save original group info for restore (empty array = was ungrouped)
+      const originalGroup = item.groupId ? groupManager.getGroup(item.groupId) : undefined;
+      const originalGroups = originalGroup
+        ? [{ name: originalGroup.name, files: [item.filePath] }]
+        : [];
+
+      await gitService.stashGroup([item.filePath], item.filePath);
+      groupManager.addStashedGroup(item.filePath, [item.filePath], 0, originalGroups);
+
+      if (item.groupId) {
+        groupManager.removeFileFromGroup(item.groupId, item.filePath);
+      }
+      await treeProvider.updateChangedFiles();
+    } catch (err: any) {
+      vscode.window.showErrorMessage(`Stash failed: ${err.message}`);
+    }
+  });
+
   const discardFile = vscode.commands.registerCommand('gitGroupCommit.discardFile', async (item: FileItem) => {
     if (!item) return;
     const confirm = await vscode.window.showWarningMessage(
@@ -423,21 +444,31 @@ export async function activate(context: vscode.ExtensionContext) {
         if (stashedGroup.originalGroups && stashedGroup.originalGroups.length > 0) {
           // Restore original groups
           for (const og of stashedGroup.originalGroups) {
-            const group = groupManager.createGroup(og.name);
-            for (const file of og.files) {
-              groupManager.addFileToGroup(group.id, file);
+            // Add to existing group if it exists, otherwise create
+            const existingGroups = groupManager.getAllGroups();
+            const existing = existingGroups.find(g => g.name === og.name);
+            if (existing) {
+              for (const file of og.files) {
+                groupManager.addFileToGroup(existing.id, file);
+              }
+            } else {
+              const group = groupManager.createGroup(og.name);
+              for (const file of og.files) {
+                groupManager.addFileToGroup(group.id, file);
+              }
             }
           }
-          vscode.window.showInformationMessage(`Restored ${stashedGroup.originalGroups.length} group(s) from "${stashedGroup.name}".`);
-        } else if (stashedGroup.name !== 'Ungrouped') {
-          // Single group stash
+          vscode.window.showInformationMessage(`Restored ${stashedGroup.originalGroups.length} group(s).`);
+        } else if (stashedGroup.originalGroups) {
+          // originalGroups is empty array = was ungrouped, just restore files
+          vscode.window.showInformationMessage(`Restored ${stashedGroup.files.length} file(s).`);
+        } else {
+          // Legacy: no originalGroups field = group stash (name = group name)
           const group = groupManager.createGroup(stashedGroup.name);
           for (const file of stashedGroup.files) {
             groupManager.addFileToGroup(group.id, file);
           }
           vscode.window.showInformationMessage(`Restored "${stashedGroup.name}" (${stashedGroup.files.length} files).`);
-        } else {
-          vscode.window.showInformationMessage(`Restored ${stashedGroup.files.length} ungrouped files.`);
         }
       }
       await treeProvider.updateChangedFiles();
@@ -462,12 +493,21 @@ export async function activate(context: vscode.ExtensionContext) {
         if (removed) {
           if (removed.originalGroups && removed.originalGroups.length > 0) {
             for (const og of removed.originalGroups) {
-              const group = groupManager.createGroup(og.name);
-              for (const file of og.files) {
-                groupManager.addFileToGroup(group.id, file);
+              const existingGroups = groupManager.getAllGroups();
+              const existing = existingGroups.find(g => g.name === og.name);
+              if (existing) {
+                for (const file of og.files) {
+                  groupManager.addFileToGroup(existing.id, file);
+                }
+              } else {
+                const group = groupManager.createGroup(og.name);
+                for (const file of og.files) {
+                  groupManager.addFileToGroup(group.id, file);
+                }
               }
             }
-          } else if (removed.name !== 'Ungrouped') {
+          } else if (!removed.originalGroups) {
+            // Legacy: no originalGroups = group stash
             const group = groupManager.createGroup(removed.name);
             for (const file of removed.files) {
               groupManager.addFileToGroup(group.id, file);
@@ -658,6 +698,7 @@ export async function activate(context: vscode.ExtensionContext) {
     stageFile,
     unstageFile,
     discardFile,
+    stashFile,
     stashAll,
     cleanEmptyGroups,
     stashGroup,
