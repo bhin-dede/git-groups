@@ -563,10 +563,10 @@ export async function activate(context: vscode.ExtensionContext) {
           const isStaged = item.section === 'staged';
           const diff = await gitService.getDiff(filePath, isStaged);
           if (diff) {
-            diffs.push(`--- ${filePath} ---\n${diff.substring(0, 500)}`);
+            diffs.push(`--- ${filePath} ---\n${diff.substring(0, 2000)}`);
           }
         } catch {
-          diffs.push(`--- ${filePath} (no diff) ---`);
+          diffs.push(`--- ${filePath} (new or binary file) ---`);
         }
       }
 
@@ -586,7 +586,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       const messages = [
         vscode.LanguageModelChatMessage.User(
-          `Based on the following git diff, suggest a concise group name that describes what was changed. Format: "type: description" (e.g. "feat: add user authentication", "fix: resolve login timeout", "refactor: extract validation logic"). The description should be specific about WHAT was done, not just the type. Max 8 words total. Reply with ONLY the group name, nothing else.\n\nFiles: ${group.files.join(', ')}\n\nDiff:\n${diffSummary}`
+          `Generate a git commit message for this diff. Format: "type: description" (feat/fix/refactor/style/docs/test/chore/perf). Mention the specific component or feature affected. Reply with ONLY the message.\n\nFiles: ${group.files.join(', ')}\n\nDiff:\n${diffSummary}`
         ),
       ];
 
