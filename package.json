@@ -135,6 +135,16 @@
         "category": "Git Groups"
       },
       {
+        "command": "gitGroupCommit.copyRelativePath",
+        "title": "Copy Relative Path",
+        "category": "Git Groups"
+      },
+      {
+        "command": "gitGroupCommit.copyAbsolutePath",
+        "title": "Copy Absolute Path",
+        "category": "Git Groups"
+      },
+      {
         "command": "gitGroupCommit.stashFile",
         "title": "Stash File",
         "icon": "$(archive)",
@@ -355,6 +365,16 @@
           "command": "gitGroupCommit.removeFromGroup",
           "when": "view == gitGroups && viewItem == groupedFile",
           "group": "1_group"
+        },
+        {
+          "command": "gitGroupCommit.copyRelativePath",
+          "when": "view == gitGroups && viewItem =~ /File$/",
+          "group": "2_copy"
+        },
+        {
+          "command": "gitGroupCommit.copyAbsolutePath",
+          "when": "view == gitGroups && viewItem =~ /File$/",
+          "group": "2_copy"
         }
       ]
     },

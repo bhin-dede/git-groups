@@ -115,7 +115,8 @@ Click `[↩]` in the toolbar to undo the last commit.
 
 - **Collapse/Expand all**: Toggle button in toolbar
 - **Refresh**: `[↻]` button (auto-refreshes on file changes)
-- **View diff**: Click any file
+- **View diff + copy path**: Click any file (opens diff and copies relative path)
+- **Copy path**: Right-click → Copy Relative Path / Copy Absolute Path
 - **Clean empty groups**: `[🧹]` button in toolbar
 
 ## Layout

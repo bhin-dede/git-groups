@@ -94,8 +94,8 @@ export class FileItem extends vscode.TreeItem {
     this.tooltip = `${filePath} [${status}]`;
 
     this.command = {
-      command: 'gitGroupCommit.openDiff',
-      title: 'Open Changes',
+      command: 'gitGroupCommit.openDiffAndCopy',
+      title: 'Open Changes & Copy Path',
       arguments: [this],
     };
   }

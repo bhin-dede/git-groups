@@ -113,7 +113,8 @@ VS Code 확장 탭(`Ctrl+Shift+X`)에서 **"Git Groups"** 검색 후 설치
 
 - **전체 접기/열기**: 상단 토글 버튼
 - **새로고침**: 상단 `[↻]` 버튼 (파일 변경 시 자동 갱신됨)
-- **diff 보기**: 파일 클릭
+- **diff 보기 + 경로 복사**: 파일 클릭 (diff 열기 + relative path 자동 복사)
+- **경로 복사**: 우클릭 → Copy Relative Path / Copy Absolute Path
 
 ## 구조
 

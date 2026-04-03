@@ -674,6 +674,26 @@ export async function activate(context: vscode.ExtensionContext) {
     await vscode.commands.executeCommand('vscode.open', uri);
   });
 
+  const copyRelativePath = vscode.commands.registerCommand('gitGroupCommit.copyRelativePath', async (item: FileItem) => {
+    if (!item) return;
+    await vscode.env.clipboard.writeText(item.filePath);
+    vscode.window.showInformationMessage(`Copied: ${item.filePath}`);
+  });
+
+  const copyAbsolutePath = vscode.commands.registerCommand('gitGroupCommit.copyAbsolutePath', async (item: FileItem) => {
+    if (!item) return;
+    const absPath = require('path').join(workspaceRoot, item.filePath);
+    await vscode.env.clipboard.writeText(absPath);
+    vscode.window.showInformationMessage(`Copied: ${absPath}`);
+  });
+
+  const openDiffAndCopy = vscode.commands.registerCommand('gitGroupCommit.openDiffAndCopy', async (item: FileItem) => {
+    if (!item) return;
+    await vscode.env.clipboard.writeText(item.filePath);
+    const uri = vscode.Uri.joinPath(vscode.Uri.file(workspaceRoot), item.filePath);
+    await vscode.commands.executeCommand('git.openChange', uri);
+  });
+
   const openDiff = vscode.commands.registerCommand('gitGroupCommit.openDiff', async (item: FileItem) => {
     if (!item) return;
     const uri = vscode.Uri.joinPath(vscode.Uri.file(workspaceRoot), item.filePath);
@@ -711,6 +731,9 @@ export async function activate(context: vscode.ExtensionContext) {
     unstageAll,
     toggleCollapse,
     refresh,
+    copyRelativePath,
+    copyAbsolutePath,
+    openDiffAndCopy,
     openFile,
     openDiff
   );

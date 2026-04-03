@@ -5,6 +5,9 @@
 ### Added
 - 개별 파일 Stash 기능 — Changes 파일 옆 `[📦]` 버튼
 - Pop 시 원래 그룹 상태 복원 — 그룹에 속했던 파일은 원래 그룹으로, ungrouped 파일은 그대로 ungrouped로
+- 파일 클릭 시 diff 열기 + relative path 클립보드 자동 복사
+- 우클릭 메뉴에 Copy Relative Path / Copy Absolute Path 추가
+- AI 그룹명 생성 프롬프트 개선
 
 ### Fixed
 - Pop 시 기존 그룹이 있으면 새로 만들지 않고 기존 그룹에 추가
