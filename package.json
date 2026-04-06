@@ -2,7 +2,7 @@
   "name": "git-groups",
   "displayName": "Git Groups",
   "description": "Group your changed files and commit them separately",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "joo00206",
   "repository": {
     "type": "git",
