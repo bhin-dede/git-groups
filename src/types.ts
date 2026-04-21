@@ -5,6 +5,7 @@ export interface FileGroup {
 }
 
 export interface StashedGroup {
+  stashId?: string;
   name: string;
   files: string[];
   stashIndex: number;

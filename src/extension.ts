@@ -1,7 +1,12 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { GitService } from './gitService';
 import { GroupManager } from './groupManager';
 import { GitGroupTreeProvider, GroupItem, FileItem, StashItem } from './treeProvider';
+
+function createStashId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export async function activate(context: vscode.ExtensionContext) {
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
@@ -336,9 +341,10 @@ export async function activate(context: vscode.ExtensionContext) {
       const originalGroups = originalGroup
         ? [{ name: originalGroup.name, files: [item.filePath] }]
         : [];
+      const stashId = createStashId();
 
-      await gitService.stashGroup([item.filePath], item.filePath);
-      groupManager.addStashedGroup(item.filePath, [item.filePath], 0, originalGroups);
+      await gitService.stashGroup([item.filePath], item.filePath, stashId);
+      groupManager.addStashedGroup(item.filePath, [item.filePath], 0, originalGroups, stashId);
 
       if (item.groupId) {
         groupManager.removeFileFromGroup(item.groupId, item.filePath);
@@ -379,8 +385,9 @@ export async function activate(context: vscode.ExtensionContext) {
       // Ungrouped files first
       const ungroupedFiles = allFiles.filter(f => !groupedFiles.has(f));
       if (ungroupedFiles.length > 0) {
-        await gitService.stashGroup(ungroupedFiles, 'Ungrouped');
-        groupManager.addStashedGroup('Ungrouped', ungroupedFiles, 0);
+        const stashId = createStashId();
+        await gitService.stashGroup(ungroupedFiles, 'Ungrouped', stashId);
+        groupManager.addStashedGroup('Ungrouped', ungroupedFiles, 0, undefined, stashId);
       }
 
       // Each group separately (reverse order so stash indexes are correct)
@@ -389,8 +396,9 @@ export async function activate(context: vscode.ExtensionContext) {
         .filter(g => g.stashFiles.length > 0);
 
       for (const g of groupsWithFiles.reverse()) {
-        await gitService.stashGroup(g.stashFiles, g.name);
-        groupManager.addStashedGroup(g.name, g.stashFiles, 0);
+        const stashId = createStashId();
+        await gitService.stashGroup(g.stashFiles, g.name, stashId);
+        groupManager.addStashedGroup(g.name, g.stashFiles, 0, undefined, stashId);
         groupManager.deleteGroup(g.id);
       }
 
@@ -418,8 +426,9 @@ export async function activate(context: vscode.ExtensionContext) {
     if (!group || group.files.length === 0) return;
     try {
       const files = [...group.files];
-      await gitService.stashGroup(files, group.name);
-      groupManager.addStashedGroup(group.name, files, 0);
+      const stashId = createStashId();
+      await gitService.stashGroup(files, group.name, stashId);
+      groupManager.addStashedGroup(group.name, files, 0, undefined, stashId);
       groupManager.deleteGroup(group.id);
       vscode.window.showInformationMessage(`Stashed "${group.name}" (${files.length} files).`);
       await treeProvider.updateChangedFiles();
@@ -431,14 +440,22 @@ export async function activate(context: vscode.ExtensionContext) {
   const popStash = vscode.commands.registerCommand('gitGroupCommit.popStash', async (item: StashItem) => {
     if (!item) return;
     try {
-      const verified = await gitService.verifyStashIndex(item.stashIndex, item.stashMessage);
-      if (!verified) {
+      const reconciled = await gitService.reconcileManagedStashes(groupManager.getStashedGroups());
+      groupManager.replaceStashedGroups(reconciled.managed);
+
+      const stashedGroup = reconciled.managed.find(
+        sg => sg.stashIndex === item.stashIndex && sg.name === item.stashMessage
+      ) ?? reconciled.managed.find(sg => sg.stashIndex === item.stashIndex)
+        ?? reconciled.managed.find(sg => sg.name === item.stashMessage);
+
+      if (!stashedGroup) {
         vscode.window.showErrorMessage('Stash index mismatch. Refreshing...');
         await treeProvider.updateChangedFiles();
         return;
       }
-      const stashedGroup = groupManager.removeStashedGroup(item.stashIndex);
-      await gitService.stashPop(item.stashIndex);
+
+      await gitService.stashPop(stashedGroup.stashIndex);
+      groupManager.removeStashedGroup(stashedGroup.stashIndex);
       // Recreate groups
       if (stashedGroup) {
         if (stashedGroup.originalGroups && stashedGroup.originalGroups.length > 0) {
@@ -478,7 +495,9 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   const popAllStash = vscode.commands.registerCommand('gitGroupCommit.popAllStash', async () => {
-    const stashedGroups = groupManager.getStashedGroups();
+    const reconciled = await gitService.reconcileManagedStashes(groupManager.getStashedGroups());
+    groupManager.replaceStashedGroups(reconciled.managed);
+    const stashedGroups = reconciled.managed;
     if (stashedGroups.length === 0) {
       vscode.window.showWarningMessage('No stashes to restore.');
       return;
@@ -536,14 +555,22 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
     try {
-      const verified = await gitService.verifyStashIndex(item.stashIndex, item.stashMessage);
-      if (!verified) {
+      const reconciled = await gitService.reconcileManagedStashes(groupManager.getStashedGroups());
+      groupManager.replaceStashedGroups(reconciled.managed);
+
+      const stashedGroup = reconciled.managed.find(
+        sg => sg.stashIndex === item.stashIndex && sg.name === item.stashMessage
+      ) ?? reconciled.managed.find(sg => sg.stashIndex === item.stashIndex)
+        ?? reconciled.managed.find(sg => sg.name === item.stashMessage);
+
+      if (!stashedGroup) {
         vscode.window.showErrorMessage('Stash index mismatch. Refreshing...');
         await treeProvider.updateChangedFiles();
         return;
       }
-      groupManager.removeStashedGroup(item.stashIndex);
-      await gitService.stashDrop(item.stashIndex);
+
+      await gitService.stashDrop(stashedGroup.stashIndex);
+      groupManager.removeStashedGroup(stashedGroup.stashIndex);
       await treeProvider.updateChangedFiles();
     } catch (err: any) {
       vscode.window.showErrorMessage(`Drop stash failed: ${err.message}`);
@@ -586,7 +613,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
       const messages = [
         vscode.LanguageModelChatMessage.User(
-          `Generate a git commit message for this diff. Format: "type: description" (feat/fix/refactor/style/docs/test/chore/perf). Mention the specific component or feature affected. Reply with ONLY the message.\n\nFiles: ${group.files.join(', ')}\n\nDiff:\n${diffSummary}`
+          `Generate a git commit message for this diff. Format: type: description (feat/fix/refactor/style/docs/test/chore/perf). Mention the specific component or feature affected. Reply with only the message text, without quotes, backticks, or code fences.\n\nFiles: ${group.files.join(', ')}\n\nDiff:\n${diffSummary}`
         ),
       ];
 
@@ -596,7 +623,13 @@ export async function activate(context: vscode.ExtensionContext) {
         name += chunk;
       }
 
-      name = name.trim().replace(/^["']|["']$/g, '');
+      name = name
+        .trim()
+        .replace(/^```[\w-]*\s*/, '')
+        .replace(/\s*```$/, '')
+        .replace(/^["'`]+|["'`]+$/g, '')
+        .split('\n')[0]
+        .trim();
       if (!name) return;
 
       groupManager.renameGroup(item.groupId, name);
@@ -682,7 +715,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const copyAbsolutePath = vscode.commands.registerCommand('gitGroupCommit.copyAbsolutePath', async (item: FileItem) => {
     if (!item) return;
-    const absPath = require('path').join(workspaceRoot, item.filePath);
+    const absPath = path.join(workspaceRoot, item.filePath);
     await vscode.env.clipboard.writeText(absPath);
     vscode.window.showInformationMessage(`Copied: ${absPath}`);
   });

@@ -172,12 +172,18 @@ export class GroupManager {
     return count;
   }
 
-  addStashedGroup(name: string, files: string[], stashIndex: number, originalGroups?: Array<{ name: string; files: string[] }>): void {
+  addStashedGroup(
+    name: string,
+    files: string[],
+    stashIndex: number,
+    originalGroups?: Array<{ name: string; files: string[] }>,
+    stashId?: string
+  ): void {
     // Increment existing stash indexes (new stash pushes others down)
     for (const sg of this.stashedGroups) {
       sg.stashIndex++;
     }
-    this.stashedGroups.unshift({ name, files, stashIndex: 0, originalGroups });
+    this.stashedGroups.unshift({ stashId, name, files, stashIndex: 0, originalGroups });
     this.saveAndNotify();
   }
 
@@ -197,6 +203,11 @@ export class GroupManager {
 
   getStashedGroups(): StashedGroup[] {
     return this.stashedGroups;
+  }
+
+  replaceStashedGroups(stashedGroups: StashedGroup[]): void {
+    this.stashedGroups = stashedGroups;
+    this.saveAndNotify();
   }
 
   private gitignoreChecked = false;

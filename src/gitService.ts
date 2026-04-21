@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
-import { GitFileStatus, GitStatusCode } from './types';
+import { GitFileStatus, GitStatusCode, StashedGroup } from './types';
 
 const execFileAsync = promisify(execFile);
 
 export class GitService {
+  private static readonly MANAGED_STASH_PREFIX = '[git-groups:';
   private workspaceRoot: string;
 
   constructor(workspaceRoot: string) {
@@ -114,15 +115,30 @@ export class GitService {
     return this.git(...args);
   }
 
-  async stashGroup(files: string[], message: string): Promise<void> {
-    const filtered = files.filter(f => f !== '.vscode/git-groups.json');
-    if (filtered.length === 0) return;
-    await this.git('stash', 'push', '-u', '-m', message, '--', ...filtered);
+  private decorateManagedStashMessage(message: string, stashId?: string): string {
+    return stashId ? `${GitService.MANAGED_STASH_PREFIX}${stashId}] ${message}` : message;
   }
 
-  async getStashList(): Promise<Array<{ index: number; message: string }>> {
+  private parseManagedStashMessage(message: string): { message: string; stashId?: string } {
+    const match = message.match(/^\[git-groups:([^\]]+)\]\s*(.*)$/);
+    if (!match) {
+      return { message };
+    }
+    return { stashId: match[1], message: match[2] };
+  }
+
+  async stashGroup(files: string[], message: string, stashId?: string): Promise<void> {
+    const filtered = files.filter(f =>
+      f !== '.vscode/git-groups.json' &&
+      !/(^|\/)\.gitignore$/.test(f)
+    );
+    if (filtered.length === 0) return;
+    await this.git('stash', 'push', '-u', '-m', this.decorateManagedStashMessage(message, stashId), '--', ...filtered);
+  }
+
+  async getStashList(): Promise<Array<{ index: number; message: string; stashId?: string }>> {
     const output = await this.git('stash', 'list', '--format=%gd||%s');
-    const stashes: Array<{ index: number; message: string }> = [];
+    const stashes: Array<{ index: number; message: string; stashId?: string }> = [];
     for (const line of output.split('\n')) {
       if (!line.trim()) continue;
       const [ref, ...msgParts] = line.split('||');
@@ -131,10 +147,74 @@ export class GitService {
         let message = msgParts.join('||');
         // Remove "On branch: " prefix that git adds
         message = message.replace(/^On \S+: /, '');
-        stashes.push({ index: parseInt(match[1]), message });
+        const parsed = this.parseManagedStashMessage(message);
+        stashes.push({ index: parseInt(match[1]), message: parsed.message, stashId: parsed.stashId });
       }
     }
     return stashes;
+  }
+
+  private sameFiles(left: string[], right: string[]): boolean {
+    const a = [...new Set(left)].sort();
+    const b = [...new Set(right)].sort();
+    if (a.length !== b.length) return false;
+    return a.every((file, index) => file === b[index]);
+  }
+
+  async getDetailedStashList(): Promise<Array<{ index: number; message: string; stashId?: string; files: string[] }>> {
+    const stashes = await this.getStashList();
+    const detailed: Array<{ index: number; message: string; stashId?: string; files: string[] }> = [];
+
+    for (const stash of stashes) {
+      detailed.push({
+        ...stash,
+        files: await this.getStashFiles(stash.index),
+      });
+    }
+
+    return detailed;
+  }
+
+  async reconcileManagedStashes(
+    stashedGroups: StashedGroup[]
+  ): Promise<{
+    managed: StashedGroup[];
+    external: Array<{ index: number; message: string; stashId?: string; files: string[] }>;
+  }> {
+    const gitStashes = await this.getDetailedStashList();
+    const remaining = [...gitStashes];
+    const managed: StashedGroup[] = [];
+
+    for (const group of stashedGroups) {
+      const idMatch = group.stashId
+        ? remaining.find(s => s.stashId === group.stashId)
+        : undefined;
+      const messageMatches = remaining.filter(s => s.message.includes(group.name));
+      const exactMatch = messageMatches.find(
+        s => s.index === group.stashIndex && this.sameFiles(s.files, group.files)
+      );
+      const fileMatch = messageMatches.find(s => this.sameFiles(s.files, group.files));
+      const preferredIndexMatch = messageMatches.find(s => s.index === group.stashIndex);
+      const fallbackMatch = messageMatches.length === 1 ? messageMatches[0] : undefined;
+      const resolved = idMatch ?? exactMatch ?? fileMatch ?? preferredIndexMatch ?? fallbackMatch;
+
+      if (!resolved) {
+        continue;
+      }
+
+      managed.push({
+        ...group,
+        stashId: resolved.stashId ?? group.stashId,
+        stashIndex: resolved.index,
+      });
+
+      const removeIndex = remaining.findIndex(s => s.index === resolved.index);
+      if (removeIndex !== -1) {
+        remaining.splice(removeIndex, 1);
+      }
+    }
+
+    return { managed, external: remaining };
   }
 
   async verifyStashIndex(index: number, expectedName: string): Promise<boolean> {
@@ -153,7 +233,7 @@ export class GitService {
   }
 
   async getStashFiles(index: number): Promise<string[]> {
-    const output = await this.git('stash', 'show', `stash@{${index}}`, '--name-only');
+    const output = await this.git('stash', 'show', '--name-only', '--include-untracked', `stash@{${index}}`);
     return output.split('\n').filter(l => l.trim());
   }
 

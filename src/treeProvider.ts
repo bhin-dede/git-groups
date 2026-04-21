@@ -137,33 +137,38 @@ export class GitGroupTreeProvider implements vscode.TreeDataProvider<TreeNode>, 
     this.groupManager.pruneStaleFiles(this.changedFiles.map(f => f.path));
 
     // Load stashes: groupManager (ours) + git stash list (external)
-    const stashedGroups = this.groupManager.getStashedGroups();
-    const managedIndexes = new Set(stashedGroups.map(sg => sg.stashIndex));
-
-    this.stashes = stashedGroups.map(sg => ({
-      index: sg.stashIndex,
-      message: sg.name,
-      files: sg.files,
-      external: false,
-    }));
-
     try {
-      const gitStashes = await this.gitService.getStashList();
-      for (const gs of gitStashes) {
-        if (!managedIndexes.has(gs.index)) {
-          const files = await this.gitService.getStashFiles(gs.index);
-          this.stashes.push({
-            index: gs.index,
-            message: gs.message,
-            files,
-            external: true,
-          });
-        }
+      const stashedGroups = this.groupManager.getStashedGroups();
+      const reconciled = await this.gitService.reconcileManagedStashes(stashedGroups);
+      if (JSON.stringify(reconciled.managed) !== JSON.stringify(stashedGroups)) {
+        this.groupManager.replaceStashedGroups(reconciled.managed);
       }
-      // Sort by index
+
+      this.stashes = reconciled.managed.map(sg => ({
+        index: sg.stashIndex,
+        message: sg.name,
+        files: sg.files,
+        external: false,
+      }));
+
+      for (const gs of reconciled.external) {
+        this.stashes.push({
+          index: gs.index,
+          message: gs.message,
+          files: gs.files,
+          external: true,
+        });
+      }
+
       this.stashes.sort((a, b) => a.index - b.index);
     } catch {
-      // git stash list failed, just show managed ones
+      const stashedGroups = this.groupManager.getStashedGroups();
+      this.stashes = stashedGroups.map(sg => ({
+        index: sg.stashIndex,
+        message: sg.name,
+        files: sg.files,
+        external: false,
+      }));
     }
 
     this.refresh();
